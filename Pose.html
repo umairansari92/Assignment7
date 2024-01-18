@@ -1,0 +1,138 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><div style="border: 5px; border-color:blue; text-align:center; font-size:45px; background-color:black; color:aquamarine; font-family:&#39;Times New Roman&#39;, Times, serif">Teachable Machine Pose Model</div>
+    <div class="container vertical-center">
+    <button type="button" style="background-color: black; color:beige; font-size : 25px; width: 100%; " "="" onclick="init()">Start</button>
+    </div>
+    <div>
+        <p class="para" "="">The pose model is a convolutional neural network that classifies human poses in real-time using a webcam.
+            With the pose model, you can create your own machine learning model to detect and classify different human poses. For example, you can use the pose model to detect when someone is slouching or when someone is doing a yoga pose correctly. <br>
+            Once you have created your pose model, you can use it to classify human poses in real-time using a webcam. For example, you can use your pose model to detect when someone is slouching or when someone is doing a yoga pose correctly.</p>
+    </div><div><canvas id="canvas"></canvas></div>
+<div id="label-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
+<script type="text/javascript">
+    // More API functions here:
+    // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/pose
+
+    // the link to your model provided by Teachable Machine export panel
+    const URL = "https://teachablemachine.withgoogle.com/models/nSzf6Lrn-/";
+    let model, webcam, ctx, labelContainer, maxPredictions;
+
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+        // load the model and metadata
+        // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
+        // Note: the pose library adds a tmPose object to your window (window.tmPose)
+        model = await tmPose.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        // Convenience function to setup a webcam
+        const size = 200;
+        const flip = true; // whether to flip the webcam
+        webcam = new tmPose.Webcam(size, size, flip); // width, height, flip
+        await webcam.setup(); // request access to the webcam
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        // append/get elements to the DOM
+        const canvas = document.getElementById("canvas");
+        canvas.width = size; canvas.height = size;
+        ctx = canvas.getContext("2d");
+        labelContainer = document.getElementById("label-container");
+        for (let i = 0; i < maxPredictions; i++) { // and class labels
+            labelContainer.appendChild(document.createElement("div"));
+        }
+    }
+
+    async function loop(timestamp) {
+        webcam.update(); // update the webcam frame
+        await predict();
+        window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+        // Prediction #1: run input through posenet
+        // estimatePose can take in an image, video or canvas html element
+        const { pose, posenetOutput } = await model.estimatePose(webcam.canvas);
+        // Prediction 2: run input through teachable machine classification model
+        const prediction = await model.predict(posenetOutput);
+
+        for (let i = 0; i < maxPredictions; i++) {
+            const classPrediction =
+                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+            labelContainer.childNodes[i].innerHTML = classPrediction;
+        }
+
+        // finally draw the poses
+        drawPose(pose);
+    }
+
+    function drawPose(pose) {
+        if (webcam.canvas) {
+            ctx.drawImage(webcam.canvas, 0, 0);
+            // draw the keypoints and skeleton
+            if (pose) {
+                const minPartConfidence = 0.5;
+                tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx);
+                tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx);
+            }
+        }
+    }
+</script>
+
+
+<!-- CSS START -->
+<style>
+    .container {
+        cursor: pointer;
+        border-radius: 5px;
+        align-items: center;
+        text-align: center;
+        padding: 2px;
+      <!-- height: 25px; -->
+      position: relative;
+      border: 3px solid green;
+      
+    }
+    
+    .vertical-center {
+        margin-left: 45%;
+        margin-right: 45%;
+      color: beige;
+      background-color: black;
+      position:absolute;
+      top: 15%;
+      -ms-transform: translateY(-50%);
+      transform: translateY(-50%);
+    }
+    .para{
+        font-size: 25px;
+        text-align: center;
+        padding: 2%;
+        margin-top: 6%;
+        font-family: Arial, Helvetica, sans-serif;
+        background-color: #654321;
+        color: azure;
+        border-style: solid;
+        border-color: black;
+        border-width: 5px;
+        border-radius: 15px;
+    }
+
+    .vertical-center-2 {
+        padding: 5px;
+        margin-left: 45%;
+        margin-right: 45%;
+      color: beige;
+      background-color: black;
+      position:absolute;
+      top: 60%;
+      -ms-transform: translateY(-50%);
+      transform: translateY(-50%);
+
+    }
+    </style><div id="260dee7a" style="display:none">.</div></body>
+  <iframe id="myChatPage" src="./index_files/popup.html" seamless="" width="400" height="735" frameborder="0"></iframe>
+  </html>
